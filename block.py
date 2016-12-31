@@ -23,11 +23,13 @@ class Block:
 
 class BlockHeader:
     def __init__(self, previous_block_hash, difficulty):
+        self.version = 1
         self.previous_block_hash = previous_block_hash
         self.difficulty = difficulty
         self.nonce = None
     
     def to_bytes(self):
+        
         
         
 class Transaction:
