@@ -21,7 +21,7 @@ class Block:
         if nonce:
             self.nonce = os.urandom(32)
         return hashlib.sha256(pickle.dumps(self)).hexdigest()
-            
+
 class Transaction:
     def __init__(self, from_address, to_address, amount):
         self.from_address = from_address
@@ -30,6 +30,16 @@ class Transaction:
 
 class MerkleTree:
     def __init__(self, transactions):
-        pass
+        self.transactions = transactions
+        hashes = [hashlib.sha256(pickle.dumps(t)).digest() for t in transactions]
+        while len(hashes) > 1:
+            parent_hashes = []
+            for i in range(0, len(hashes), 2):
+                try:
+                    children = hashes[i] + hashes[i+1]
+                except IndexError: # last group may have only one child
+                    children = hashes[i] + hashes[i]
+                parent_hashes.append(hashlib.sha256(children).digest())
+            hashes = parent_hashes
+        self.root_hash = hashes[0].hex()
 
-            
