@@ -18,6 +18,10 @@ class Block:
             hash = self.header.hash(nonce=True)
         return hash
 
+    def struct(self):
+        transactions_struct = b''.join([t.struct() for t in self.transactions])
+        return self.header.struct() + transactions_struct
+
     def order_transactions(self):
         pass
 
@@ -31,7 +35,7 @@ class BlockHeader:
         self.merkle_root_hash = merkle_root_hash
         self.nonce = '0' * 16
     
-    def to_struct(self):
+    def struct(self):
         return struct.pack('I32s32sII4s', self.version, bytes.fromhex(self.previous_block_hash), 
             bytes.fromhex(self.merkle_root_hash), self.timestamp, self.difficulty, bytes.fromhex(self.nonce))
         
@@ -39,7 +43,7 @@ class BlockHeader:
         if nonce:
             self.timestamp = int(time.time())
             self.nonce = os.urandom(4).hex()
-        return hashlib.sha256(self.to_struct()).hexdigest()
+        return hashlib.sha256(self.struct()).hexdigest()
         
         
 class Transaction:
@@ -47,6 +51,9 @@ class Transaction:
         self.from_address = from_address
         self.to_address = to_address
         self.amount = amount
+
+    def struct(self):
+        return struct.pack('32s32sI', bytes.fromhex(self.from_address), bytes.fromhex(self.to_address), self.amount)
 
 class MerkleTree:
     def __init__(self, transactions):
