@@ -2,34 +2,44 @@
 import pickle
 import hashlib
 import os
+import time
+import struct
 
 class Block:
     def __init__(self, previous_block_hash, transactions=[], difficulty=4):
-        self.header = BlockHeader(previous_block_hash, difficulty)
         self.transactions = transactions
-        self.merkle = MerkleTree(transactions)
+        self.merkle_tree = MerkleTree(transactions)
+        self.header = BlockHeader(previous_block_hash, difficulty, self.merkle_tree.root_hash())
     
     def mine(self):
-        hash = '1' * self.difficulty
-        target = '0' * self.difficulty
-        while (hash[0:self.difficulty] != target):
-            hash = self.hash(nonce=True)
+        hash = '1' * self.header.difficulty
+        target = '0' * self.header.difficulty
+        while (hash[0:self.header.difficulty] != target):
+            hash = self.header.hash(nonce=True)
         return hash
 
-    def hash(self, nonce=False):
-        if nonce:
-            self.nonce = os.urandom(32)
-        return hashlib.sha256(pickle.dumps(self)).hexdigest()
+    def order_transactions(self):
+        pass
+
 
 class BlockHeader:
-    def __init__(self, previous_block_hash, difficulty):
+    def __init__(self, previous_block_hash, difficulty, merkle_root_hash):
         self.version = 1
         self.previous_block_hash = previous_block_hash
         self.difficulty = difficulty
-        self.nonce = None
+        self.timestamp = int(time.time())
+        self.merkle_root_hash = merkle_root_hash
+        self.nonce = '0' * 16
     
-    def to_bytes(self):
+    def to_struct(self):
+        return struct.pack('I32s32sII4s', self.version, bytes.fromhex(self.previous_block_hash), 
+            bytes.fromhex(self.merkle_root_hash), self.timestamp, self.difficulty, bytes.fromhex(self.nonce))
         
+    def hash(self, nonce=False):
+        if nonce:
+            self.timestamp = int(time.time())
+            self.nonce = os.urandom(4).hex()
+        return hashlib.sha256(self.to_struct()).hexdigest()
         
         
 class Transaction:
