@@ -4,6 +4,7 @@ import hashlib
 import os
 import time
 import struct
+from ecdsa import SigningKey, SECP256k1
 
 def double_sha256(message):
     return hashlib.sha256(hashlib.sha256(message).digest())
@@ -44,8 +45,8 @@ class BlockHeader:
             self.timestamp = int(time.time())
             self.nonce = os.urandom(4).hex()
         return double_sha256(self.struct())
-        
-        
+
+
 class Transaction:
     def __init__(self, from_address, to_address, amount):
         self.from_address = from_address
@@ -57,6 +58,16 @@ class Transaction:
 
     def hash(self):
         return double_sha256(self.struct())
+
+class TransactionInput:
+    def __init__(self, input_tx, input_tx_index, checksig):
+        self.previous_tx = previous_tx
+        self.previous_tx_index = previous_tx_index
+        self.checksig = checksig
+
+    def struct(self):
+        format = "32sH64s"
+        return struct.pack("32sH64s", self.previous_tx, self.previous_tx_index, self.checksig)
 
 class MerkleTree:
     def __init__(self, transactions):
