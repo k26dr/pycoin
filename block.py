@@ -48,13 +48,16 @@ class BlockHeader:
 
 
 class Transaction:
-    def __init__(self, from_address, to_address, amount):
-        self.from_address = from_address
-        self.to_address = to_address
-        self.amount = amount
+    def __init__(self, inputs, outputs):
+        self.inputs = inputs
+        self.outputs = outputs
 
     def struct(self):
-        return struct.pack('32s32sI', bytes.fromhex(self.from_address), bytes.fromhex(self.to_address), self.amount)
+        num_inputs = len(self.inputs)
+        num_outputs = len(self.outputs)
+        input_struct = [i.struct() for i in self.inputs]
+        output_struct = [o.struct() for o in self.outputs]
+        return struct.pack('HH', num_inputs, num_outputs) + inputs_struct + output_struct
 
     def hash(self):
         return double_sha256(self.struct())
@@ -68,6 +71,11 @@ class TransactionInput:
     def struct(self):
         format = "32sH64s"
         return struct.pack("32sH64s", self.previous_tx, self.previous_tx_index, self.checksig)
+
+class TransactionOutput:
+    def __init__(self, value, to_address):
+        self.value = value
+        self.to_address = to_address
 
 class MerkleTree:
     def __init__(self, transactions):
