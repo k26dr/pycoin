@@ -9,6 +9,9 @@ from ecdsa import SigningKey, SECP256k1
 def double_sha256(message):
     return hashlib.sha256(hashlib.sha256(message).digest())
 
+class PycoinError(Exception):
+    pass
+
 class Block:
     def __init__(self, previous_block_hash, transactions=[], difficulty=4):
         self.transactions = transactions
@@ -49,6 +52,10 @@ class BlockHeader:
 
 class Transaction:
     def __init__(self, inputs, outputs):
+        input_total = sum([i.value for i in self.inputs])
+        output_total = sum([o.value for o in self.outputs])
+        if input_value != output_value:
+            raise PycoinError("Total sum of inputs must match sum of outputs")
         self.inputs = inputs
         self.outputs = outputs
 
@@ -69,13 +76,15 @@ class TransactionInput:
         self.checksig = checksig
 
     def struct(self):
-        format = "32sH64s"
         return struct.pack("32sH64s", self.previous_tx, self.previous_tx_index, self.checksig)
 
 class TransactionOutput:
-    def __init__(self, value, to_address):
-        self.value = value
+    def __init__(self, pybits, to_address):
+        self.pybits = pybits
         self.to_address = to_address
+
+    def struct(self):
+        return struct.pack('Q32s', self.pybits, self.to_address)
 
 class MerkleTree:
     def __init__(self, transactions):
