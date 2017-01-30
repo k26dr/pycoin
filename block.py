@@ -4,6 +4,7 @@ import hashlib
 import os
 import time
 import struct
+import pdb
 from ecdsa import SigningKey, SECP256k1
 
 def double_sha256(message):
@@ -52,39 +53,37 @@ class BlockHeader:
 
 class Transaction:
     def __init__(self, inputs, outputs):
-        input_total = sum([i.value for i in self.inputs])
-        output_total = sum([o.value for o in self.outputs])
-        if input_value != output_value:
-            raise PycoinError("Total sum of inputs must match sum of outputs")
         self.inputs = inputs
         self.outputs = outputs
 
     def struct(self):
         num_inputs = len(self.inputs)
         num_outputs = len(self.outputs)
-        input_struct = [i.struct() for i in self.inputs]
-        output_struct = [o.struct() for o in self.outputs]
-        return struct.pack('HH', num_inputs, num_outputs) + inputs_struct + output_struct
+        input_struct = b''.join([i.struct() for i in self.inputs])
+        output_struct = b''.join([o.struct() for o in self.outputs])
+        return struct.pack('HH', num_inputs, num_outputs) + input_struct + output_struct
 
     def hash(self):
         return double_sha256(self.struct())
 
 class TransactionInput:
     def __init__(self, input_tx, input_tx_index, checksig):
-        self.previous_tx = previous_tx
-        self.previous_tx_index = previous_tx_index
+        self.input_tx = input_tx
+        self.input_tx_index = input_tx_index
         self.checksig = checksig
 
+    # 98 bytes
     def struct(self):
-        return struct.pack("32sH64s", self.previous_tx, self.previous_tx_index, self.checksig)
+        return struct.pack("32sH64s", bytes.fromhex(self.input_tx), self.input_tx_index, bytes.fromhex(self.checksig))
 
 class TransactionOutput:
     def __init__(self, pybits, to_address):
         self.pybits = pybits
         self.to_address = to_address
 
+    # 40 bytes
     def struct(self):
-        return struct.pack('Q32s', self.pybits, self.to_address)
+        return struct.pack('Q32s', self.pybits, bytes.fromhex(self.to_address))
 
 class MerkleTree:
     def __init__(self, transactions):
