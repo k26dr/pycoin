@@ -16,8 +16,7 @@ class PycoinError(Exception):
 class Block:
     def __init__(self, previous_block_hash, transactions=[]):
         self.transactions = transactions
-        self.merkle_tree = MerkleTree(transactions)
-        self.header = BlockHeader(previous_block_hash, self.merkle_tree.root_hash())
+        self.header = BlockHeader(previous_block_hash)
     
     def mine(self):
         hash = '1' * 64
@@ -31,17 +30,16 @@ class Block:
 
 
 class BlockHeader:
-    def __init__(self, previous_block_hash, merkle_root_hash):
+    def __init__(self, previous_block_hash):
         self.version = 1
         self.previous_block_hash = previous_block_hash
         self.difficulty = '0'*4 + 'f'*60
         self.timestamp = int(time.time())
-        self.merkle_root_hash = merkle_root_hash
         self.nonce = '0' * 16
     
     def struct(self):
-        return struct.pack('I32s32sI32s4s', self.version, bytes.fromhex(self.previous_block_hash), 
-            bytes.fromhex(self.merkle_root_hash), self.timestamp, bytes.fromhex(self.difficulty), bytes.fromhex(self.nonce))
+        return struct.pack('I32sI32s4s', self.version, bytes.fromhex(self.previous_block_hash), 
+            self.timestamp, bytes.fromhex(self.difficulty), bytes.fromhex(self.nonce))
         
     def hash(self, nonce=False):
         if nonce:
@@ -83,23 +81,3 @@ class TransactionOutput:
     # 40 bytes
     def struct(self):
         return struct.pack('Q32s', self.pybits, bytes.fromhex(self.to_address))
-
-class MerkleTree:
-    def __init__(self, transactions):
-        self.layer_sizes = [len(transactions)]
-        hashes = [t.hash().digest() for t in transactions]
-        self.hash_tree = [d.hex() for d in hashes]
-        while len(hashes) > 1:
-            parent_hashes = []
-            for i in range(0, len(hashes), 2):
-                try:
-                    children = hashes[i] + hashes[i+1]
-                except IndexError: # last group may have only one child
-                    children = hashes[i] + hashes[i]
-                parent_hashes.append(hashlib.sha256(children).digest())
-            self.hash_tree += [d.hex() for d in parent_hashes]
-            self.layer_sizes.append(len(parent_hashes))
-            hashes = parent_hashes
-    
-    def root_hash(self):
-        return self.hash_tree[-1]
