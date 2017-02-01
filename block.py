@@ -14,15 +14,14 @@ class PycoinError(Exception):
     pass
 
 class Block:
-    def __init__(self, previous_block_hash, transactions=[], difficulty=4):
+    def __init__(self, previous_block_hash, transactions=[]):
         self.transactions = transactions
         self.merkle_tree = MerkleTree(transactions)
-        self.header = BlockHeader(previous_block_hash, difficulty, self.merkle_tree.root_hash())
+        self.header = BlockHeader(previous_block_hash, self.merkle_tree.root_hash())
     
     def mine(self):
-        hash = '1' * self.header.difficulty
-        target = '0' * self.header.difficulty
-        while (hash[0:self.header.difficulty] != target):
+        hash = '1' * 64
+        while (hash > self.header.difficulty):
             hash = self.header.hash(nonce=True).hexdigest()
         return hash
 
@@ -32,17 +31,17 @@ class Block:
 
 
 class BlockHeader:
-    def __init__(self, previous_block_hash, difficulty, merkle_root_hash):
+    def __init__(self, previous_block_hash, merkle_root_hash):
         self.version = 1
         self.previous_block_hash = previous_block_hash
-        self.difficulty = difficulty
+        self.difficulty = '0'*4 + 'f'*60
         self.timestamp = int(time.time())
         self.merkle_root_hash = merkle_root_hash
         self.nonce = '0' * 16
     
     def struct(self):
-        return struct.pack('I32s32sII4s', self.version, bytes.fromhex(self.previous_block_hash), 
-            bytes.fromhex(self.merkle_root_hash), self.timestamp, self.difficulty, bytes.fromhex(self.nonce))
+        return struct.pack('I32s32sI32s4s', self.version, bytes.fromhex(self.previous_block_hash), 
+            bytes.fromhex(self.merkle_root_hash), self.timestamp, bytes.fromhex(self.difficulty), bytes.fromhex(self.nonce))
         
     def hash(self, nonce=False):
         if nonce:
